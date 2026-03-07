@@ -1,6 +1,6 @@
 <center>
-	<h1 align="center">BlockTheSpot Installer</h1> 
-	<h4 align="center">Official installer for a multi-purpose adblocker and skip-bypass for the <strong>Spotify for Windows (64 bit)</strong> </h4>
+	<h1 align="center">BlockTheSpot Installer Autorun</h1> 
+	<h4 align="center">Unofficial installer for a multi-purpose adblocker and skip-bypass for the <strong>Spotify for Windows (64 bit)</strong> </h4>
    <h5 align="center">Please support Spotify by purchasing premium</h5>
    <p align="center">
      <a href="https://github.com/Nuzair45/BlockTheSpot-Installer/releases"><img src="https://github.com/Nuzair46/BlockTheSpot-Installer/blob/main/assets/blockthespot.png" /></a>
@@ -33,13 +33,13 @@ go run github.com/akavel/rsrc@v0.10.2 -manifest assets/app.manifest -ico assets/
 ### Build locally (on Windows)
 
 ```powershell
-go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.0.0" -o BlockTheSpotInstaller.exe .
+go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.2.1" -o BlockTheSpotInstaller.exe .
 ```
 
 ### Cross-build from Linux/macOS
 
 ```bash
-GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.0.0" -o BlockTheSpotInstaller.exe .
+GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.2.1" -o BlockTheSpotInstaller.exe .
 ```
 
 ### If you update the icon PNG
