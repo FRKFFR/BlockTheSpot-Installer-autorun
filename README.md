@@ -13,7 +13,7 @@
 
 1. Download latest [BlockTheSpotInstallerAutorun.exe](https://github.com/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest/download/BlockTheSpotInstallerAutorun.exe).
 2. Close Spotify if it is running.
-3. Run `BlockTheSpotInstaller.exe`.
+3. Run `BlockTheSpotInstallerAutorun.exe`.
 4. Choose one action:
    - `Install / Patch` to install or update BlockTheSpot.
    - `Uninstall / Restore` to remove BlockTheSpot and restore original `chrome_elf.dll` when backup exists.
