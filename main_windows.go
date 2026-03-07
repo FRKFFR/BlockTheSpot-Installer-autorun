@@ -36,6 +36,7 @@ var installerVersion = "dev"
 type installOptions struct {
 	UpdateSpotify       bool
 	LaunchSpotifyOnDone bool
+	AutoStart           bool
 }
 
 type operationMode int
@@ -65,6 +66,7 @@ type installerApp struct {
 	updateInfo      *walk.LinkLabel
 	updateCheck     *walk.CheckBox
 	launchCheck     *walk.CheckBox
+	autostartCheck  *walk.CheckBox
 	progress        *walk.ProgressBar
 	status          *walk.Label
 	logView         *walk.TextEdit
@@ -73,6 +75,15 @@ type installerApp struct {
 }
 
 func main() {
+	// Check if --autorun flag is present
+	isAutoRun := false
+	for _, arg := range os.Args {
+		if arg == "--autorun" {
+			isAutoRun = true
+			break
+		}
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			details := fmt.Sprintf("Unhandled panic: %v\r\n\r\n%s", r, string(debug.Stack()))
@@ -82,13 +93,13 @@ func main() {
 	}()
 
 	app := &installerApp{}
-	if err := app.run(); err != nil {
+	if err := app.run(isAutoRun); err != nil {
 		reportFatalError(err.Error())
 		os.Exit(1)
 	}
 }
 
-func (a *installerApp) run() error {
+func (a *installerApp) run(isAutoRun bool) error {
 	appIcon, _ := loadAppIcon()
 
 	if err := (MainWindow{
@@ -124,8 +135,9 @@ func (a *installerApp) run() error {
 					_ = openExternalURL(link.URL())
 				},
 			},
-			CheckBox{AssignTo: &a.updateCheck, Text: "Update or reinstall Spotify before patching", Checked: false},
+			CheckBox{AssignTo: &a.updateCheck, Text: "Update or reinstall Spotify before patching", Checked: true},
 			CheckBox{AssignTo: &a.launchCheck, Text: "Launch Spotify and close installer after completion", Checked: true},
+			CheckBox{AssignTo: &a.autostartCheck, Text: "Run this program every time Windows starts", Checked: a.isAutoStartEnabled()},
 			ProgressBar{AssignTo: &a.progress, MinValue: 0, MaxValue: 100},
 			Label{AssignTo: &a.status, Text: "Idle"},
 			TextEdit{AssignTo: &a.logView, ReadOnly: true, VScroll: true},
@@ -165,6 +177,16 @@ func (a *installerApp) run() error {
 	}
 	a.setUpdateInfo(fmt.Sprintf("Installer version: %s", installerVersion))
 	go a.checkForInstallerUpdate()
+
+	// Auto-start install only if running from autorun (detected by checking if current exe matches registry)
+	if isAutoRun {
+		go func() {
+			time.Sleep(2 * time.Second) // Give UI time to initialize
+			a.mw.Synchronize(func() {
+				a.startInstall()
+			})
+		}()
+	}
 
 	a.mw.Run()
 	return nil
@@ -208,6 +230,7 @@ func (a *installerApp) startOperation(mode operationMode) {
 	opts := installOptions{
 		UpdateSpotify:       a.updateCheck.Checked(),
 		LaunchSpotifyOnDone: a.launchCheck.Checked(),
+		AutoStart:           a.autostartCheck.Checked(),
 	}
 
 	a.setBusy(true)
@@ -242,6 +265,18 @@ func (a *installerApp) startOperation(mode operationMode) {
 				return
 			}
 
+			// Handle autorun setting
+			if opts.AutoStart != a.isAutoStartEnabled() {
+				if opts.AutoStart {
+					err = a.enableAutoStart()
+				} else {
+					err = a.disableAutoStart()
+				}
+				if err != nil {
+					a.logfSafe("Warning: Failed to %s autorun: %v", map[bool]string{true: "enable", false: "disable"}[opts.AutoStart], err)
+				}
+			}
+
 			a.progress.SetValue(100)
 			a.status.SetText("Completed")
 			if opts.LaunchSpotifyOnDone {
@@ -256,6 +291,7 @@ func (a *installerApp) setBusy(busy bool) {
 	a.uninstallButton.SetEnabled(!busy)
 	a.updateCheck.SetEnabled(!busy)
 	a.launchCheck.SetEnabled(!busy)
+	a.autostartCheck.SetEnabled(!busy)
 }
 
 func (a *installerApp) logfSafe(format string, args ...any) {
@@ -1049,4 +1085,47 @@ func defaultSpotifyDir() string {
 		return ""
 	}
 	return filepath.Join(home, "AppData", "Roaming", "Spotify")
+}
+
+func (a *installerApp) isAutoStartEnabled() bool {
+	exePath, err := os.Executable()
+	if err != nil {
+		return false
+	}
+
+	script := "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'BlockTheSpotInstaller' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty 'BlockTheSpotInstaller'"
+	out, err := hiddenCommand("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script).CombinedOutput()
+	if err != nil {
+		return false
+	}
+
+	return strings.TrimSpace(string(out)) == exePath+" --autorun"
+}
+
+func (a *installerApp) enableAutoStart() error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	// Add --autorun flag to the registry entry
+	script := fmt.Sprintf("Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'BlockTheSpotInstaller' -Value '%s --autorun' -Force", strings.ReplaceAll(exePath, "'", "''"))
+	out, err := hiddenCommand("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("powershell failed: %v (%s)", err, strings.TrimSpace(string(out)))
+	}
+
+	a.logfSafe("Autorun enabled: %s --autorun", exePath)
+	return nil
+}
+
+func (a *installerApp) disableAutoStart() error {
+	script := "Remove-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'BlockTheSpotInstaller' -ErrorAction SilentlyContinue"
+	out, err := hiddenCommand("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("powershell failed: %v (%s)", err, strings.TrimSpace(string(out)))
+	}
+
+	a.logfSafe("Autorun disabled")
+	return nil
 }
