@@ -27,8 +27,8 @@ const (
 	releaseBlockURL  = "https://github.com/mrpond/BlockTheSpot/releases/latest/download/blockthespot.dll"
 	configURL        = "https://raw.githubusercontent.com/mrpond/BlockTheSpot/master/config.ini"
 
-	installerLatestReleaseAPI = "https://api.github.com/repos/Nuzair46/BlockTheSpot-Installer/releases/latest"
-	installerReleasesURL      = "https://github.com/Nuzair46/BlockTheSpot-Installer/releases/latest"
+	installerLatestReleaseAPI = "https://api.github.com/repos/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest"
+	installerReleasesURL      = "https://github.com/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest"
 )
 
 var installerVersion = "dev"
