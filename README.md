@@ -11,7 +11,7 @@
 
 ## Install
 
-1. Download latest [BlockTheSpotInstaller.exe](https://github.com/Nuzair46/BlockTheSpot-installer/releases/latest/download/BlockTheSpotInstaller.exe).
+1. Download latest [BlockTheSpotInstallerAutorun.exe](https://github.com/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest/download/BlockTheSpotInstallerAutorun.exe).
 2. Close Spotify if it is running.
 3. Run `BlockTheSpotInstaller.exe`.
 4. Choose one action:
