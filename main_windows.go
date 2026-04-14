@@ -29,7 +29,7 @@ const (
 
 	installerLatestReleaseAPI = "https://api.github.com/repos/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest"
 	installerReleasesURL      = "https://github.com/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest"
-	spotifyVersionsURL        = "https://raw.githubusercontent.com/FRKFFR/BlockTheSpot-Installer-autorun/main/spotify-versions.json"
+	spotifyVersionsURL        = "https://raw.githubusercontent.com/FRKFFR/BlockTheSpot-Installer-autorun/refs/heads/main/spotify-versions.json"
 )
 
 type spotifyVersion struct {
@@ -177,7 +177,6 @@ func (a *installerApp) run(isAutoRun bool) error {
 					TextLabel{Text: "Spotify Version:"},
 					ComboBox{
 						AssignTo: &a.versionCombo,
-						Value:    spotifyVersions[0].Name,
 						MinSize:  Size{Width: 200},
 					},
 					HSpacer{},
@@ -226,7 +225,8 @@ func (a *installerApp) run(isAutoRun bool) error {
 	// Fetch versions from GitHub JSON
 	fetchedVersions, err := fetchSpotifyVersions()
 	if err != nil {
-		a.logfSafe("Error: %v", err)
+		a.logfSafe("Debug: URL being fetched: %s", spotifyVersionsURL)
+		a.logfSafe("Debug: Error details: %v", err)
 		a.logfSafe("Failed to load versions from GitHub. Please check your internet connection.")
 		// Show error message to user
 		walk.MsgBox(a.mw, "Version Load Error", "Failed to load Spotify versions from GitHub.\nPlease check your internet connection and try again.", walk.MsgBoxIconError)
