@@ -29,7 +29,36 @@ const (
 
 	installerLatestReleaseAPI = "https://api.github.com/repos/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest"
 	installerReleasesURL      = "https://github.com/FRKFFR/BlockTheSpot-Installer-autorun/releases/latest"
+	spotifyVersionsURL        = "https://raw.githubusercontent.com/FRKFFR/BlockTheSpot-Installer-autorun/main/spotify-versions.json"
 )
+
+type spotifyVersion struct {
+	Name string
+	URL  string
+}
+
+var spotifyVersions = []spotifyVersion{
+	// Will be populated from GitHub JSON
+}
+
+// Fetch Spotify versions from GitHub JSON file
+func fetchSpotifyVersions() ([]spotifyVersion, error) {
+	body, err := downloadBytes(spotifyVersionsURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download versions from GitHub: %w", err)
+	}
+
+	var versions []spotifyVersion
+	if err := json.Unmarshal(body, &versions); err != nil {
+		return nil, fmt.Errorf("failed to parse versions JSON: %w", err)
+	}
+
+	if len(versions) == 0 {
+		return nil, errors.New("no versions found in JSON file")
+	}
+
+	return versions, nil
+}
 
 var installerVersion = "dev"
 
@@ -37,6 +66,7 @@ type installOptions struct {
 	UpdateSpotify       bool
 	LaunchSpotifyOnDone bool
 	AutoStart           bool
+	SelectedVersion     string
 }
 
 type operationMode int
@@ -67,6 +97,7 @@ type installerApp struct {
 	updateCheck     *walk.CheckBox
 	launchCheck     *walk.CheckBox
 	autostartCheck  *walk.CheckBox
+	versionCombo    *walk.ComboBox
 	progress        *walk.ProgressBar
 	status          *walk.Label
 	logView         *walk.TextEdit
@@ -102,6 +133,9 @@ func main() {
 func (a *installerApp) run(isAutoRun bool) error {
 	appIcon, _ := loadAppIcon()
 
+	// Load saved version
+	savedVersion := a.loadSavedVersion()
+
 	if err := (MainWindow{
 		AssignTo: &a.mw,
 		Title:    "BlockTheSpot Installer",
@@ -136,13 +170,26 @@ func (a *installerApp) run(isAutoRun bool) error {
 				},
 			},
 			CheckBox{AssignTo: &a.updateCheck, Text: "Update or reinstall Spotify before patching", Checked: true},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					TextLabel{Text: "Spotify Version:"},
+					ComboBox{
+						AssignTo: &a.versionCombo,
+						Value:    spotifyVersions[0].Name,
+						MinSize:  Size{Width: 200},
+					},
+					HSpacer{},
+				},
+			},
 			CheckBox{AssignTo: &a.launchCheck, Text: "Launch Spotify and close installer after completion", Checked: true},
 			CheckBox{AssignTo: &a.autostartCheck, Text: "Run this program every time Windows starts", Checked: a.isAutoStartEnabled()},
 			ProgressBar{AssignTo: &a.progress, MinValue: 0, MaxValue: 100},
 			Label{AssignTo: &a.status, Text: "Idle"},
 			TextEdit{AssignTo: &a.logView, ReadOnly: true, VScroll: true},
 			LinkLabel{
-				Text: `Credits: <a id="bts" href="https://github.com/mrpond/BlockTheSpot">BlockTheSpot (mrpond)</a> | <a id="installer" href="https://github.com/Nuzair46/BlockTheSpot-Installer">BlockTheSpot Installer (Nuzair46)</a> | <a id="discord" href="https://discord.gg/eYudMwgYtY">Discord Server</a>`,
+				Text: `Credits: <a id="bts" href="https://github.com/mrpond/BlockTheSpot">BlockTheSpot (mrpond)</a> | <a id="installer" href="https://github.com/Nuzair46/BlockTheSpot-Installer">BlockTheSpot Installer (Nuzair46)</a> | <a id="discord" href="https://discord.gg/eYudMwgYtY">Discord Server</a> | <a id="installer_mod" href="https://github.com/FRKFFR/BlockTheSpot-Installer-autorun">Modded Installer by FR_KF_FR</a>`,
 				OnLinkActivated: func(link *walk.LinkLabelLink) {
 					_ = openExternalURL(link.URL())
 				},
@@ -175,6 +222,34 @@ func (a *installerApp) run(isAutoRun bool) error {
 	if appIcon != nil && a.logoView != nil {
 		_ = a.logoView.SetImage(appIcon)
 	}
+
+	// Fetch versions from GitHub JSON
+	fetchedVersions, err := fetchSpotifyVersions()
+	if err != nil {
+		a.logfSafe("Error: %v", err)
+		a.logfSafe("Failed to load versions from GitHub. Please check your internet connection.")
+		// Show error message to user
+		walk.MsgBox(a.mw, "Version Load Error", "Failed to load Spotify versions from GitHub.\nPlease check your internet connection and try again.", walk.MsgBoxIconError)
+		return nil
+	}
+
+	// Populate version combo box
+	var versionNames []string
+	for _, version := range fetchedVersions {
+		versionNames = append(versionNames, version.Name)
+	}
+	a.versionCombo.SetModel(versionNames)
+
+	// Set saved version if found
+	if savedVersion != "" {
+		for i, version := range fetchedVersions {
+			if version.Name == savedVersion {
+				a.versionCombo.SetCurrentIndex(i)
+				break
+			}
+		}
+	}
+
 	a.setUpdateInfo(fmt.Sprintf("Installer version: %s", installerVersion))
 	go a.checkForInstallerUpdate()
 
@@ -231,6 +306,7 @@ func (a *installerApp) startOperation(mode operationMode) {
 		UpdateSpotify:       a.updateCheck.Checked(),
 		LaunchSpotifyOnDone: a.launchCheck.Checked(),
 		AutoStart:           a.autostartCheck.Checked(),
+		SelectedVersion:     a.versionCombo.Text(),
 	}
 
 	a.setBusy(true)
@@ -264,6 +340,9 @@ func (a *installerApp) startOperation(mode operationMode) {
 				walk.MsgBox(a.mw, "Installer Error", err.Error(), walk.MsgBoxIconError)
 				return
 			}
+
+			// Save selected version
+			a.saveSelectedVersion(opts.SelectedVersion)
 
 			// Handle autorun setting
 			if opts.AutoStart != a.isAutoStartEnabled() {
@@ -544,9 +623,29 @@ func (i *installer) installSpotify(spotifyExe string) error {
 	}
 	defer os.RemoveAll(tempDir)
 
+	// Fetch current versions from GitHub JSON
+	currentVersions, err := fetchSpotifyVersions()
+	if err != nil {
+		return fmt.Errorf("failed to fetch versions from GitHub: %w", err)
+	}
+
+	// Find the URL for selected version
+	var selectedURL string
+	for _, version := range currentVersions {
+		if version.Name == i.options.SelectedVersion {
+			selectedURL = version.URL
+			break
+		}
+	}
+
+	// Fallback to latest if not found
+	if selectedURL == "" {
+		selectedURL = currentVersions[0].URL
+	}
+
 	setupPath := filepath.Join(tempDir, "SpotifyFullSetupX64.exe")
-	i.logf("Downloading Spotify installer: %s", spotifySetupURL)
-	if err := downloadFile(spotifySetupURL, setupPath); err != nil {
+	i.logf("Downloading Spotify installer: %s", selectedURL)
+	if err := downloadFile(selectedURL, setupPath); err != nil {
 		return fmt.Errorf("failed to download Spotify installer: %w", err)
 	}
 
@@ -1128,4 +1227,33 @@ func (a *installerApp) disableAutoStart() error {
 
 	a.logfSafe("Autorun disabled")
 	return nil
+}
+
+func (a *installerApp) saveSelectedVersion(version string) {
+	configPath := filepath.Join(os.TempDir(), "BlockTheSpotInstaller", "config.txt")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		return
+	}
+
+	data := fmt.Sprintf("SelectedVersion=%s\n", version)
+	if err := os.WriteFile(configPath, []byte(data), 0o644); err != nil {
+		a.logfSafe("Warning: Failed to save selected version: %v", err)
+	}
+}
+
+func (a *installerApp) loadSavedVersion() string {
+	configPath := filepath.Join(os.TempDir(), "BlockTheSpotInstaller", "config.txt")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return ""
+	}
+
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "SelectedVersion=") {
+			return strings.TrimPrefix(line, "SelectedVersion=")
+		}
+	}
+	return ""
 }
