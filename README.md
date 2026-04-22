@@ -7,7 +7,7 @@
    </p>
 </center>
 
-[![Build status](https://github.com/Nuzair46/BlockTheSpot-Installer/actions/workflows/ci-release.yml/badge.svg?branch=main)](https://github.com/Nuzair46/BlockTheSpot-Installer/actions/workflows/ci-release.yml)  [![Discord](https://discord.com/api/guilds/807273906872123412/widget.png)](https://discord.gg/eYudMwgYtY) <img src="https://img.shields.io/github/downloads/FRKFFR/BlockTheSpot-Installer-autorun/total.svg" />
+[![Build status](https://github.com/FRKFFR/BlockTheSpot-Installer-autorun/actions/workflows/ci-release.yml/badge.svg?branch=main)](https://github.com/Nuzair46/BlockTheSpot-Installer/actions/workflows/ci-release.yml)  [![Discord](https://discord.com/api/guilds/807273906872123412/widget.png)](https://discord.gg/eYudMwgYtY) <img src="https://img.shields.io/github/downloads/FRKFFR/BlockTheSpot-Installer-autorun/total.svg" />
 
 ## Install
 
