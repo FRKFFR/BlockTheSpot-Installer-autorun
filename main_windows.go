@@ -134,15 +134,6 @@ type installerApp struct {
 }
 
 func main() {
-	// Check if --autorun flag is present
-	isAutoRun := false
-	for _, arg := range os.Args {
-		if arg == "--autorun" {
-			isAutoRun = true
-			break
-		}
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			details := fmt.Sprintf("Unhandled panic: %v\r\n\r\n%s", r, string(debug.Stack()))
@@ -152,13 +143,13 @@ func main() {
 	}()
 
 	app := &installerApp{}
-	if err := app.run(isAutoRun); err != nil {
+	if err := app.run(); err != nil {
 		reportFatalError(err.Error())
 		os.Exit(1)
 	}
 }
 
-func (a *installerApp) run(isAutoRun bool) error {
+func (a *installerApp) run() error {
 	appIcon, _ := loadAppIcon()
 
 	if err := (MainWindow{
