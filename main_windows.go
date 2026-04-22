@@ -185,25 +185,32 @@ func (a *installerApp) run() error {
 					_ = openExternalURL(link.URL())
 				},
 			},
-			CheckBox{AssignTo: &a.updateCheck, Text: "Update or reinstall Spotify before patching", Checked: false},
 			Composite{
-				Layout: VBox{},
+				Layout: HBox{},
 				Children: []Widget{
-					TextLabel{Text: "Spotify version to install"},
-					ComboBox{
-						AssignTo: &a.versionCombo,
-						Editable: false,
-						Model:    []string{"Loading available Windows x64 versions..."},
+					HSpacer{},
+					Composite{
+						Layout: VBox{},
+						Children: []Widget{
+							TextLabel{Text: "Spotify version to install"},
+							ComboBox{
+								AssignTo: &a.versionCombo,
+								Editable: false,
+								Model:    []string{"Loading available Windows x64 versions..."},
+							},
+						},
 					},
+					HSpacer{},
 				},
 			},
+			CheckBox{AssignTo: &a.updateCheck, Text: "Update or reinstall Spotify before patching", Checked: false},
 			CheckBox{AssignTo: &a.launchCheck, Text: "Launch Spotify and close installer after completion", Checked: true},
 			CheckBox{AssignTo: &a.autostartCheck, Text: "Run this program every time Windows starts", Checked: a.isAutoStartEnabled()},
 			ProgressBar{AssignTo: &a.progress, MinValue: 0, MaxValue: 100},
 			Label{AssignTo: &a.status, Text: "Idle"},
 			TextEdit{AssignTo: &a.logView, ReadOnly: true, VScroll: true},
 			LinkLabel{
-				Text: `Credits: <a id="bts" href="https://github.com/mrpond/BlockTheSpot">BlockTheSpot (mrpond)</a> | <a id="installer" href="https://github.com/Nuzair46/BlockTheSpot-Installer">BlockTheSpot Installer (Nuzair46)</a> | <a id="discord" href="https://discord.gg/eYudMwgYtY">Discord Server</a>`,
+				Text: `Credits: <a id="bts" href="https://github.com/mrpond/BlockTheSpot">BlockTheSpot (mrpond)</a> | <a id="installer" href="https://github.com/Nuzair46/BlockTheSpot-Installer">BlockTheSpot Installer (Nuzair46)</a> | <a id="discord" href="https://discord.gg/eYudMwgYtY">Discord Server</a> | <a id="installer_mod" href="https://github.com/FRKFFR/BlockTheSpot-Installer-autorun">Modded Installer by FR_KF_FR</a>`,
 				OnLinkActivated: func(link *walk.LinkLabelLink) {
 					_ = openExternalURL(link.URL())
 				},
