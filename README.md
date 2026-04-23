@@ -7,7 +7,7 @@
    </p>
 </center>
 
-[![Build status](https://github.com/Nuzair46/BlockTheSpot-Installer/actions/workflows/ci-release.yml/badge.svg?branch=main)](https://github.com/Nuzair46/BlockTheSpot-Installer/actions/workflows/ci-release.yml)  [![Discord](https://discord.com/api/guilds/807273906872123412/widget.png)](https://discord.gg/eYudMwgYtY) <img src="https://img.shields.io/github/downloads/FRKFFR/BlockTheSpot-Installer-autorun/total.svg" />
+[![Build status](https://github.com/FRKFFR/BlockTheSpot-Installer-autorun/actions/workflows/ci-release.yml/badge.svg?branch=main)](https://github.com/Nuzair46/BlockTheSpot-Installer/actions/workflows/ci-release.yml)  [![Discord](https://discord.com/api/guilds/807273906872123412/widget.png)](https://discord.gg/eYudMwgYtY) <img src="https://img.shields.io/github/downloads/FRKFFR/BlockTheSpot-Installer-autorun/total.svg" />
 
 ## Install
 
@@ -17,8 +17,9 @@
 4. Choose one action:
    - `Install / Patch` to install or update BlockTheSpot.
    - `Uninstall / Restore` to remove BlockTheSpot and restore original `chrome_elf.dll` when backup exists.
-5. Enable `Update or reinstall Spotify before patching` when you want to refresh Spotify before patching.
-6. If `Launch Spotify and close installer after completion` is enabled, Spotify starts and the installer closes automatically.
+5. Choose the Spotify Windows x64 version you want to install. The list only shows the recommended version from `config.ini` and newer supported versions, and the recommended one is preselected.
+6. Enable `Update or reinstall Spotify before patching` when you want to install the selected Spotify version before patching.
+7. If `Launch Spotify and close installer after completion` is enabled, Spotify starts and the installer closes automatically.
 
 ## Development
 
@@ -33,13 +34,13 @@ go run github.com/akavel/rsrc@v0.10.2 -manifest assets/app.manifest -ico assets/
 ### Build locally (on Windows)
 
 ```powershell
-go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.2.1" -o BlockTheSpotInstaller.exe .
+go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.2.3" -o BlockTheSpotInstaller.exe .
 ```
 
 ### Cross-build from Linux/macOS
 
 ```bash
-GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.2.1" -o BlockTheSpotInstaller.exe .
+GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-H=windowsgui -X main.installerVersion=v1.2.3" -o BlockTheSpotInstaller.exe .
 ```
 
 ### If you update the icon PNG
