@@ -134,6 +134,15 @@ type installerApp struct {
 }
 
 func main() {
+	// Check if --autorun flag is present
+	isAutoRun := false
+	for _, arg := range os.Args {
+		if arg == "--autorun" {
+			isAutoRun = true
+			break
+		}
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			details := fmt.Sprintf("Unhandled panic: %v\r\n\r\n%s", r, string(debug.Stack()))
@@ -143,13 +152,13 @@ func main() {
 	}()
 
 	app := &installerApp{}
-	if err := app.run(); err != nil {
+	if err := app.run(isAutoRun); err != nil {
 		reportFatalError(err.Error())
 		os.Exit(1)
 	}
 }
 
-func (a *installerApp) run() error {
+func (a *installerApp) run(isAutoRun bool) error {
 	appIcon, _ := loadAppIcon()
 
 	if err := (MainWindow{
@@ -247,6 +256,16 @@ func (a *installerApp) run() error {
 	a.setUpdateInfo(fmt.Sprintf("Installer version: %s", installerVersion))
 	go a.checkForInstallerUpdate()
 	go a.loadSpotifyVersionChoices()
+
+	// Auto-start install only if running from autorun
+	if isAutoRun {
+		go func() {
+			time.Sleep(2 * time.Second) // Give UI time to initialize
+			a.mw.Synchronize(func() {
+				a.startInstall()
+			})
+		}()
+	}
 
 	a.mw.Run()
 	return nil
